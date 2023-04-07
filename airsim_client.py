@@ -7,10 +7,11 @@ import pprint
 import cv2
 from scipy.spatial.transform import Rotation as R 
 import math
-import circle_finder
+import repo.circle_finder as circle_finder
 
 class uav_setpoints:
     def __init__(self) -> None:
+        # x, y, z, v
         self.circle_setpoint_moveToPositionAsync = (
             (15.5, -19.6 , -3.5, 5),
             (22, -41.2 , -2.5, 5),
@@ -56,15 +57,29 @@ class airsim_client:
 
         self.setpoints = uav_setpoints()
 
+    # Takeoff vehicle to 3m above ground.
+    # Vehicle should not be moving when this API is used
+    # Waiting until the takeoff process finished.
+    # @see MultirotorClient.takeoffAsync
     def task_takeoff(self):
         self.client.armDisarm(True)
         self.client.takeoffAsync().join()
 
     def task_cross_circle(self, circle_id_from_one):
+        # @see MultirotorClient.moveByVelocityZBodyFrameAsync
+        # moveToPositionAsync(
+        #   x, y, z, velocity,
+        #   timeout_sec=3e+38, drivetrain=0,
+        #   yaw_mode=<YawMode> {
+        #       'is_rate': True, 'yaw_or_rate': 0.0
+        #   }, lookahead=-1, adaptive_lookahead=1, vehicle_name='')
         self.client.moveToPositionAsync(*self.setpoints.get_circle_setpoint(circle_id_from_one)).join()
-        self.client.hoverAsync().join() # 悬停函数
+        # Directly interrupt the movement
+        self.client.hoverAsync().join() # 悬停函数 # unnecessary
         time.sleep(3) #
         # airsim.wait_key('Press any key to rotate')
+        # rotateToYawAsync(yaw, timeout_sec=3e+38, margin=5, vehicle_name='')
+        # rotate to [yar - margin, yar + margin], in deg
         self.client.rotateToYawAsync(self.setpoints.get_circle_yaw(circle_id_from_one)).join() # 旋转yaw角，正对障碍物识别
         # time.sleep(3) #
         circle_xyz = self.circle_finder.get_circle_position_in_wc()
@@ -74,7 +89,7 @@ class airsim_client:
 
         self.client.rotateToYawAsync(0).join()
         # time.sleep(3)
-    
+
     def task_land(self):
         self.client.moveToPositionAsync(*self.setpoints.get_land_setpoint()).join()
         self.client.hoverAsync().join() # 悬停函数
@@ -87,7 +102,7 @@ class airsim_client:
         print("Taking off...")
 
         self.task_takeoff()
-        for circle_id in range(1, 7 + 1):
+        for circle_id in range(1, 7 + 1): # [1, 7]
             # time.sleep(3)
             print("=========================")
             print("Now try to pass circle {}...".format(circle_id))
