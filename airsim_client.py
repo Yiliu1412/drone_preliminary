@@ -7,7 +7,7 @@ import pprint
 import cv2
 from scipy.spatial.transform import Rotation as R 
 import math
-import repo.circle_finder as circle_finder
+import circle_finder as circle_finder
 
 class uav_setpoints:
     def __init__(self) -> None:
