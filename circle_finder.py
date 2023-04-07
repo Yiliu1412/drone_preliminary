@@ -36,7 +36,12 @@ class circle_finder:
         
         return position_list, rotation_matrix
 
+    # return [ImageResponse, NDArray[float32]]
     def get_rgb_depthperspective_image(self):
+        # classairsim.types.ImageRequest(
+        #   camera_name, image_type,
+        #   pixels_as_float=False,
+        #   compress=True)
         png_image = self.client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, pixels_as_float = False, compress = False),
                                         airsim.ImageRequest("0", airsim.ImageType.DepthPerspective, pixels_as_float = True, compress = False)])
 
@@ -47,12 +52,14 @@ class circle_finder:
         return pics_rgb, depthperspective
 
     def get_circle_x_y(self, rgb, depthperspective):
+        # set all the elements which value is greater than 8
         depthperspective[depthperspective > 8] = 0
         depthperspective = depthperspective.astype(np.uint8)
+        # make the image more clearer
         depthperspective = cv2.equalizeHist(depthperspective)
         # print(depthperspective)
         cv2.imshow('depth', depthperspective)
-        cv2.waitKey(1000)
+        #cv2.waitKey(1000)
 
         count = 0
         circle = [0, 0, 0]
@@ -62,14 +69,20 @@ class circle_finder:
             circles = cv2.HoughCircles(depthperspective, cv2.HOUGH_GRADIENT, 1, 
                                         30, param1=None, param2=30, minRadius=30, maxRadius=300) # 注意图片分辨率大小与圆半径检测
 
+        # !!! SHOULD THE FOLLOWING CODE BE IN THE WHILE LOOP???????
         circles = list(circles)
+        # find the circle with maximum radius
         circles.sort(key = lambda x:x[0][2], reverse = True)
         circle += circles[0][0]
         count += 1
+
+        # !!! WHAT ARE YOU FUCKING DOING
+        # trying to get the average circle
         if(count >= 10):
             circle = circle / count 
 
         # for circle in circles[0]:
+        # UNUSED
         x = int(circle[0])
         y = int(circle[1])
         r = int(circle[2])
@@ -77,21 +90,22 @@ class circle_finder:
         img_rgb = img1d.reshape(rgb.height, rgb.width, 3)
         rgb_pic = cv2.circle(img_rgb, (x, y), r, (0, 0, 255), 3) # 显示圆
         rgb_pic = cv2.circle(rgb_pic, (x, y), 2, (255, 255, 0), -1) # 显示圆心
-        cv2.imshow('new', rgb_pic)
-        cv2.waitKey(1000)
-        cv2.destroyAllWindows()
+        #cv2.imshow('new', rgb_pic)
+        #cv2.waitKey(1000)
+        #cv2.destroyAllWindows()
         return circle[0], circle[1] # 输出检测到的圆的x, y坐标
 
     def get_circle_center_z(self, depthperspective):
         shape = depthperspective.shape
         mask = cv2.inRange(depthperspective, 1, 8)
+        print('circle_center_z_mast', mask)
         tmp = []
-        for i in range(shape[0]):
-            for j in range(shape[1]):
+        for i in range(shape[0]): # y
+            for j in range(shape[1]): # x
                 if mask[i][j] != 0:
                     k1 = (j - self.cx) / self.fx
                     k2 = (i - self.cy) / self.fy
-                    z = depthperspective[i][j] / math.sqrt(k1**2 + k2**2 + 1) 
+                    z = depthperspective[i][j] / math.sqrt(k1**2 + k2**2 + 1) # MARK
                     tmp.append(z)
         circle_center_z = sum(tmp) / len(tmp)
         return circle_center_z
