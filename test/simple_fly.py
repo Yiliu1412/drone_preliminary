@@ -59,34 +59,54 @@ def find_circle_position_pnp(scene_image: np.ndarray, depth_image: np.ndarray):
     circles = cv2.HoughCircles(
         mask, cv2.HOUGH_GRADIENT, 1, 30,
         param1 = None, param2 = 30,
-        minRadius = 30, maxRadius = 300
+        minRadius = 30, maxRadius = 0
     )
 
     x, y, r = circles[0][0]
     scene_image = cv2.circle(scene_image, (int(x), int(y)), int(r), (255, 0, 0), 3)
+    scene_image = cv2.circle(scene_image, (int(x), int(y)), int(r + 10), (0, 255, 0), 3)
+    scene_image = cv2.circle(scene_image, (int(x), int(y)), int(r - 10), (0, 0, 255), 3)
     scene_image = cv2.circle(scene_image, (int(x), int(y)), 2, (255, 255, 0), -1)
 
-    #cv2.imshow('color1', scene_image)
-    #cv2.waitKey()
+    cv2.imshow('color1', scene_image)
+    cv2.waitKey()
 
-    #cv2.destroyAllWindows()
+    cv2.destroyAllWindows()
+    
+    
+    '''zs = []
+    h, w = scene_image.shape[0], scene_image.shape[1]
+    for py in range(h):
+        for px in range(w):
+            if mask[py][px] != 0:
+                kx = (px - cx) / fx
+                ky = (py - cy) / fy
+                z = depth_image[py][px] / math.sqrt(kx ** 2 + ky ** 2 + 1)
+                zs.append(z)
+    z = sum(zs) / len(zs)'''
 
-    t = 0
-    sum, cnt = 0, 0
+    zs = []
     print(x, y, r)
     w, h = depth_image.shape
+    step = 2 * math.pi / 360
+    t = -step
     while t < 2 * math.pi:
-        px = int(x + r * math.cos(t))
-        py = int(y + r * math.sin(t))
-        if px >= w or px < 0 or py >= h or py < 0:
-            continue
-        kx = (px - cx) / fx
-        ky = (py - cy) / fy
-        z = depth_image[px][py] / math.sqrt(kx ** 2 + ky ** 2 + 1)
-        sum += z
-        cnt += 1
-        t += 10
-    temp_z = sum / cnt
+        t += step
+        dr = - r / 10
+        min_z = 9999
+        while dr < r / 10:
+            dr += r / 100
+            px = round(x + (r + dr) * math.cos(t))
+            py = round(y + (r + dr) * math.sin(t))
+            if px >= w or px < 0 or py >= h or py < 0:
+                continue
+            kx = (px - cx) / fx
+            ky = (py - cy) / fy
+            z = depth_image[py][px] / math.sqrt(kx ** 2 + ky ** 2 + 1)
+            min_z = min(min_z, z)
+        zs.append(min_z)
+    z = sum(zs) / len(zs)
+    print(x, y, z, r)
 
     return x, y, z, r
 
@@ -129,7 +149,7 @@ def get_world_coordinate(x: float, y: float, z: float, position: np.ndarray, rot
     pinv = np.linalg.pinv(camera_inner_matrix)
     point = (np.array([x, y, 1]) * z).T
     tmp = np.dot(pinv, point)
-    # tmp[2] += 0.6 #?
+    #tmp[2] += 0.6 #?
     rbc = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
     result = np.dot(rotation_matrix, np.dot(rbc, tmp)) + position.T
     return result
@@ -249,6 +269,7 @@ if __name__ == '__main__':
 
         position, rotation = get_camera_info(client)
 
+        print('x')
         scene_image, depth_image = get_image(client)
 
         cx, cy, cz, r = find_circle_position_pnp(scene_image, depth_image)
@@ -281,7 +302,7 @@ if __name__ == '__main__':
 
         #find_circle_position_hough(scene_image, depth_image)
         #client.rotateToYawAsync(0).join()
-        time.sleep(3)
+        #time.sleep(3)
 
     client.armDisarm(False)
     client.enableApiControl(False)
