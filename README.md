@@ -1,9 +1,8 @@
-
 # Todo
 
-1. @LLAYUAN 学习Python
-2. 找出碰撞原因，优化移动行为
-3. 阅读AirSimw文档`https://frendowu.github.io/AirSim-docs-zh`
+1. 阅读AirSimw文档`https://frendowu.github.io/AirSim-docs-zh`
+2. 穿圈后，有速度突变，姿态改变过快，可能现实环境会炸机
+
 
 # Task Record
 
@@ -26,4 +25,11 @@
 3. @Etenallightning 共享了Remote Desktop，拯救小组的硬件于水火之中
 4. @Yiliu1412 摸鱼了，进行了进度跟进
 
-
+2023年4月16日15:48:03
+---
+1. `move` 不传参 z轴偏高
+2. moveby 往下飞 z轴偏高
+3. yawmode 在偏航角是不是零度就不调整
+4. 重构了找圆心算法，
+5. 移动算法没有改动
+6. [8字爆算移动](https://zhuanlan.zhihu.com/p/485796378)
