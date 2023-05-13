@@ -1,6 +1,6 @@
 # Todo
 
-1. 阅读AirSimw文档`https://frendowu.github.io/AirSim-docs-zh`
+1. 阅读AirSim文档`https://frendowu.github.io/AirSim-docs-zh`
 2. 穿圈后，有速度突变，姿态改变过快，可能现实环境会炸机
 
 
